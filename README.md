@@ -1,5 +1,5 @@
 # TarChecker
-"md5sum -c" for tar archive. TarChcker is an "on the fly" checker.
+"md5sum -c" for files in tar archive. TarChcker is an "on the fly" checker.
 
 ## Requirements
  This program requires following libraries. You can download these *.jar files from Apache commons project home page.
