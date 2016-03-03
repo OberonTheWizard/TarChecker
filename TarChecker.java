@@ -33,30 +33,38 @@ public class TarChecker {
             test.loadTable(checkListFile);
             test.check(tarPath);
         }catch(Exception e){
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
     public void check(String tarPath) throws IOException{
         // System.err.println(tarPath);
         // System.err.println(checkListFile);
-        TarArchiveInputStream tis = new TarArchiveInputStream(new BufferedInputStream(new FileInputStream(tarPath)));
-        TarArchiveEntry ae = null;
-        while(null != (ae = tis.getNextTarEntry())) {
-            if(path2md5.containsKey(ae.getName()) && !ae.isDirectory()){
-                String md5 = org.apache.commons.codec.digest.DigestUtils.md5Hex(tis);
-                if(path2md5.get(ae.getName()).equals(md5)){
-                    System.err.println("OK:\t" + ae.getName());
-                }else {
-                    System.err.println("Bad:\t" + ae.getName());
+        TarArchiveInputStream tis = null;
+        try {
+            tis = new TarArchiveInputStream(new BufferedInputStream(new FileInputStream(tarPath)));
+            TarArchiveEntry ae = null;
+            while(null != (ae = tis.getNextTarEntry())) {
+                if(path2md5.containsKey(ae.getName()) && !ae.isDirectory()){
+                    String md5 = org.apache.commons.codec.digest.DigestUtils.md5Hex(tis);
+                    if(path2md5.get(ae.getName()).equals(md5)){
+                        System.err.println("OK:\t" + ae.getName());
+                    }else {
+                        System.err.println("Bad:\t" + ae.getName());
+                    }
+                    // String md5 = md5(ae.getFile());
+                    // System.out.println(md5 + "\t" + ae.getName());
+                    checked.put(ae.getName(), true);
                 }
-                // String md5 = md5(ae.getFile());
-                // System.out.println(md5 + "\t" + ae.getName());
-                checked.put(ae.getName(), true);
             }
-        }
-        for(String k: checked.keySet()){
-            if(checked.get(k) == false){
-                System.err.println("No:\t" + k);
+            for(String k: checked.keySet()){
+                if(checked.get(k) == false){
+                    System.err.println("No:\t" + k);
+                }
+            }
+        }finally {
+            if(tis != null){
+                tis.close();
             }
         }
     }
