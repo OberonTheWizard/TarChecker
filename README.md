@@ -9,5 +9,5 @@
 * commons-io-2.4
 
 ## Usage:
-     java TarChecker -c[d5sum.txt] [tar archive]
+     java TarChecker -c [d5sum.txt] [tar archive]
 
