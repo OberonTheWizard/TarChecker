@@ -11,3 +11,4 @@ Requirements
 
  Usage:
      java TarChecker -c[d5sum.txt] [tar archive]
+
