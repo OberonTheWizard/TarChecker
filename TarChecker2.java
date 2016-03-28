@@ -45,7 +45,11 @@ public class TarChecker2 {
         byte[] header = new byte[512];
         byte[] sizebuf = new byte[12];
         byte[] namebuf = new byte[128];
+	byte[] linknamebuf = new byte[100];
+	byte[] prefixbuf = new byte[155];
 int j = 0;
+        boolean isLongName = false;
+        String longname = null;
         while(true){
                 // System.out.println("type:  " + typeflag);
             int read = bis.read(header);
@@ -59,9 +63,20 @@ int j = 0;
    //       fout.close();
 
             System.arraycopy(header, 124, sizebuf,0, 12);
+            System.arraycopy(header, 157, linknamebuf,0, 100);
+            System.arraycopy(header, 345, prefixbuf,0, 155);
             // System.arraycopy(header, 124, sizebuf,0, 12);
             System.arraycopy(header, 0, namebuf,0, 100);
-            String name = str(namebuf);
+            String name = null;
+            if(longname != null){
+                name = longname;
+                longname = null;
+            }else {
+                name = str(namebuf);
+            }
+	    String linkname = str(linknamebuf);
+            String prefix = str(prefixbuf);
+
             long length = bytesToLong(sizebuf);
             // System.out.printf("pos: %x\n", pos_tmp);
             // System.out.println("name: "+ name);
@@ -71,16 +86,25 @@ int j = 0;
             // System.out.println("blength: "+ block_length);
             long skip = 0;
             if(name.length() == 0){
-                System.err.println("name length is zero");
+                System.err.println("finish");
                 break;
+            }else if(typeflag == 'L'){ // long link
+                isLongName = true;
+                skip = block_length;
             }else {
+                isLongName = false;
+		System.err.println("Checking(name)    : " + name);
+		// System.err.println("Checking(linkname): " + linkname);
+		// System.err.println("Checking(typeflag): " + ((char)typeflag));
+		// System.err.println("Checking(prefix)  : " + prefix);
                 if(path2md5.containsKey(name)){
                     String md5 = md5(bis, length);
                     if(path2md5.get(name).equals(md5)){
-                        System.err.println("OK:\t" + name + "\t" + md5);
+                        System.out.println("OK:\t" + name + "\t" + md5);
                     }else {
-                        System.err.println("Bad:\t" + name + "\t" + md5);
+                        System.out.println("Bad:\t" + name + "\t" + md5);
                     }
+                    checked.put(name, true);
                     skip = block_length - length;
                 }else {
                     skip = block_length;
@@ -95,6 +119,10 @@ int j = 0;
                    this_skip = skip;
                 }
                 long skipped = (long)bis.read(BUF, 0, (int)this_skip);
+                if(isLongName){
+                   longname = str(BUF);
+                   // System.out.println("longname: "+ longname);
+		}
 /*
                 if(skipped != this_skip){
                     // System.out.println("skip != skipped: " + skip + " "+ skipped);
@@ -108,6 +136,12 @@ int j = 0;
             // System.out.println("skip " + skip);
         }
         bis.close();
+        for(String k: checked.keySet()){
+            if(checked.get(k) == false){
+                System.out.println("No:\t" + k);
+            }
+        }
+
     }
     private String md5(InputStream is, long size)throws IOException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("MD5");
@@ -142,6 +176,9 @@ int j = 0;
             while(null != (raw = br.readLine())){
                 String[] buf = raw.split("\\s+", 2);
                 if(buf.length > 1){
+                    if(buf[1].startsWith("./")){
+                        buf[1] = buf[1].substring(2);
+                    }
                     path2md5.put(buf[1], buf[0]);
                     checked.put(buf[1], false);
                 }
